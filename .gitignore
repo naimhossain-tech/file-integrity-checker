@@ -1,0 +1,4 @@
+sample.txt
+hashes.json
+__pycache__/
+*.pyc
