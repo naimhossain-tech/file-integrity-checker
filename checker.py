@@ -22,37 +22,45 @@ def save_hashes(hashes):
     with open(HASH_FILE, "w") as file:
         json.dump(hashes, file, indent=2)
 
-if len(sys.argv) != 3:
-    print("Usage:")
-    print("  python checker.py save <file>")
-    print("  python checker.py check <file>")
-    sys.exit(1)
+def main():
+    if len(sys.argv) < 3:
+        print("Usage:")
+        print("  python checker.py save <file1> [file2 ...]")
+        print("  python checker.py check <file1> [file2 ...]")
+        sys.exit(1)
 
-action, path = sys.argv[1], sys.argv[2]
-
-try:
-    current_hash = sha256_file(path)
+    action = sys.argv[1]
+    paths = sys.argv[2:]
     hashes = load_hashes()
 
-    if action == "save":
-        hashes[path] = current_hash
-        save_hashes(hashes)
-        print("Baseline saved.")
-        print("SHA-256:", current_hash)
-
-    elif action == "check":
-        saved_hash = hashes.get(path)
-        if saved_hash is None:
-            print("No saved hash. Run save first.")
-        elif saved_hash == current_hash:
-            print("OK: File has not changed.")
-        else:
-            print("WARNING: File has changed!")
-            print("Saved:  ", saved_hash)
-            print("Current:", current_hash)
-
-    else:
+    if action not in ("save", "check"):
         print("Unknown action. Use save or check.")
+        sys.exit(1)
 
-except (OSError, json.JSONDecodeError) as error:
-    print("Error:", error)
+    for path in paths:
+        try:
+            current_hash = sha256_file(path)
+
+            if action == "save":
+                hashes[path] = current_hash
+                print(f"SAVED: {path}")
+
+            else:
+                saved_hash = hashes.get(path)
+
+                if saved_hash is None:
+                    print(f"NO BASELINE: {path}")
+                elif saved_hash == current_hash:
+                    print(f"OK: {path} has not changed")
+                else:
+                    print(f"WARNING: {path} has changed!")
+
+        except OSError as error:
+            print(f"ERROR: {path}: {error}")
+
+    if action == "save":
+        save_hashes(hashes)
+        print("Baseline(s) saved.")
+
+if __name__ == "__main__":
+    main()
